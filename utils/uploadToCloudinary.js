@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
-const fs = require('fs/promises'); // Use async FS for cleaner code
+const fs = require('fs');
+const path = require('path');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -14,8 +15,10 @@ const uploadToCloudinary = async (localFilePath, folder = 'products') => {
       resource_type: 'auto'
     });
 
-    // ✅ Async cleanup using fs.promises
-    await fs.unlink(localFilePath);
+    // ✅ Only try to unlink if it's a valid local file path
+    if (localFilePath && !localFilePath.startsWith('http') && fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+    }
 
     return result.secure_url;
   } catch (error) {
