@@ -1,26 +1,22 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-// Ensure 'uploads' folder exists at runtime
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir); // Absolute path
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'uploads', // folder in Cloudinary
+      resource_type: 'auto', // handles both image and video
+      format: file.mimetype.split('/')[1], // auto format detection
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    };
   },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  }
 });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp|mp4|mov|avi/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const extname = allowedTypes.test(file.originalname.toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
   if (extname && mimetype) {
     cb(null, true);

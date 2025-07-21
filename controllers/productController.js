@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Inventory = require('../models/Inventory');
 const ProductVariant = require('../models/ProductVariant');
+const uploadToCloudinary = require('../utils/uploadToCloudinary');
 // Create Product
 Product.hasMany(ProductVariant, { foreignKey: 'productId', as: 'variants' });
 ProductVariant.belongsTo(Product, { foreignKey: 'productId' });
@@ -23,33 +24,37 @@ exports.createProduct = async (req, res, next) => {
 
     const parsedVariants = JSON.parse(variants || '[]');
 
-    // Group files by variant index and field (images/videos)
     const variantFilesMap = {};
 
     for (const file of req.files || []) {
       const match = file.fieldname.match(/variantFiles\[(\d+)]\[(images|videos)]/);
       if (match) {
         const index = Number(match[1]);
-        const type = match[2]; // 'images' or 'videos'
+        const type = match[2];
 
         if (!variantFilesMap[index]) variantFilesMap[index] = { images: [], videos: [] };
         variantFilesMap[index][type].push(file);
       }
     }
 
-    // Create each variant and link files
     for (let i = 0; i < parsedVariants.length; i++) {
       const variantData = parsedVariants[i];
       const files = variantFilesMap[i] || { images: [], videos: [] };
 
+      // 🔄 Upload files to Cloudinary
+      const imageUrls = await Promise.all(
+        files.images.map(f => uploadToCloudinary(f.path, 'products/images'))
+      );
+      const videoUrls = await Promise.all(
+        files.videos.map(f => uploadToCloudinary(f.path, 'products/videos'))
+      );
+
       await ProductVariant.create({
         productId: product.id,
         ...variantData,
-        images: files.images.map(f => f.originalname), // or upload URL if using cloud
-        videos: files.videos.map(f => f.originalname)
+        images: imageUrls,
+        videos: videoUrls
       });
-
-      // Optionally, save files to disk or upload to cloud (S3, Cloudinary, etc.)
     }
 
     res.status(201).json({ success: true, product });
@@ -58,6 +63,7 @@ exports.createProduct = async (req, res, next) => {
     next(err);
   }
 };
+
 
 // Get All Products
 exports.getAllProducts = async (req, res, next) => {
@@ -156,12 +162,12 @@ exports.getProductById = async (req, res, next) => {
 };
 
 
-// Update Product
 exports.updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{ model: ProductVariant, as: 'variants' }]
     });
+
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
 
     const {
@@ -179,11 +185,11 @@ exports.updateProduct = async (req, res, next) => {
 
     await product.update(updatedFields);
 
-    // Handle variant updates
     const parsedVariants = JSON.parse(variants || '[]');
 
-    // Group uploaded files by variant index and type
     const variantFilesMap = {};
+
+    // First structure (multer.single / any)
     for (const file of req.files || []) {
       const match = file.fieldname.match(/variantFiles\[(\d+)]\[(images|videos)]/);
       if (match) {
@@ -194,19 +200,53 @@ exports.updateProduct = async (req, res, next) => {
       }
     }
 
-    // Process each variant
- if (req.files && typeof req.files === 'object') {
-  for (const fieldname in req.files) {
-    const filesArray = req.files[fieldname];
-    const match = fieldname.match(/variantFiles\[(\d+)]\[(images|videos)]/);
-    if (match && Array.isArray(filesArray)) {
-      const index = Number(match[1]);
-      const type = match[2];
-      if (!variantFilesMap[index]) variantFilesMap[index] = { images: [], videos: [] };
-      variantFilesMap[index][type].push(...filesArray);
+    // Second structure (multer.fields)
+    if (req.files && typeof req.files === 'object') {
+      for (const fieldname in req.files) {
+        const filesArray = req.files[fieldname];
+        const match = fieldname.match(/variantFiles\[(\d+)]\[(images|videos)]/);
+        if (match && Array.isArray(filesArray)) {
+          const index = Number(match[1]);
+          const type = match[2];
+          if (!variantFilesMap[index]) variantFilesMap[index] = { images: [], videos: [] };
+          variantFilesMap[index][type].push(...filesArray);
+        }
+      }
     }
-  }
-}
+
+    // Handle updating variants (you can choose to delete + recreate, or update in-place)
+    for (let i = 0; i < parsedVariants.length; i++) {
+      const variantData = parsedVariants[i];
+      const files = variantFilesMap[i] || { images: [], videos: [] };
+
+      // Upload files to Cloudinary
+      const imageUrls = await Promise.all(
+        files.images.map(f => uploadToCloudinary(f.path, 'products/images'))
+      );
+      const videoUrls = await Promise.all(
+        files.videos.map(f => uploadToCloudinary(f.path, 'products/videos'))
+      );
+
+      if (variantData.id) {
+        // Update existing variant
+        await ProductVariant.update(
+          {
+            ...variantData,
+            images: imageUrls.length ? imageUrls : variantData.images,
+            videos: videoUrls.length ? videoUrls : variantData.videos
+          },
+          { where: { id: variantData.id } }
+        );
+      } else {
+        // Create new variant
+        await ProductVariant.create({
+          productId: product.id,
+          ...variantData,
+          images: imageUrls,
+          videos: videoUrls
+        });
+      }
+    }
 
     res.json({ success: true, message: 'Product updated successfully' });
   } catch (err) {
@@ -214,6 +254,7 @@ exports.updateProduct = async (req, res, next) => {
     next(err);
   }
 };
+
 
 
 // Delete Product
