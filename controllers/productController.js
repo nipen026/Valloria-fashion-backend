@@ -261,17 +261,35 @@ exports.updateProduct = async (req, res, next) => {
 };
 
 
-
-// Delete Product
 exports.deleteProduct = async (req, res, next) => {
-    try {
-        const product = await Product.findByPk(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+  try {
+    const product = await Product.findByPk(req.params.id, {
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants'
+        }
+      ]
+    });
 
-        await product.destroy();
-        res.json({ success: true, message: 'Product deleted successfully' });
-    } catch (err) {
-        next(err);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
+    // Delete associated ProductVariants
+    if (product.variants && product.variants.length > 0) {
+      for (const variant of product.variants) {
+        await variant.destroy();
+      }
+    }
+
+    // Finally, delete the product
+    await product.destroy();
+
+    res.json({ success: true, message: 'Product and variants deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
 };
+
 
