@@ -150,8 +150,8 @@ exports.getProductById = async (req, res, next) => {
     // Format variant image and video URLs
     const variants = product.variants.map(variant => ({
       ...variant.toJSON(),
-      images: (variant.images || []).map(file => BASE_URL + file),
-      videos: (variant.videos || []).map(file => BASE_URL + file)
+      images: (variant.images || []).map(file => file),
+      videos: (variant.videos || []).map(file => file)
     }));
 
     res.json({
