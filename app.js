@@ -21,9 +21,9 @@ app.use(bodyParser.json());
 
 app.use(passport.initialize());
 app.use('/api/auth', authRoutes); // done
-app.use('/', ((req,res)=>{
-    res.send('Connection done')
-})); // done
+app.get('/', (req, res) => {
+  res.send('Connection done');
+});
 app.use('/api/products', productRoutes); // done
 app.use('/api/cart', cartRoutes); // done
 app.use('/api/orders', orderRoutes); // done
