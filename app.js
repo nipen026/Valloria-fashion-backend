@@ -32,5 +32,5 @@ app.use('/webhook', webhookRoutes);
 app.use('/webhook/shiprocket', shiprocketWebhook);
 app.use('/api/admin/dashboard', adminDashboardRoutes); //done
 app.use('/invoices', express.static('invoices'));
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 module.exports = app;
