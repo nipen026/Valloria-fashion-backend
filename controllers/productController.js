@@ -16,6 +16,7 @@ exports.createProduct = async (req, res, next) => {
       ...productFields
     } = req.body;
 
+    // Create the main product
     const product = await Product.create({
       ...productFields,
       seoKeywords: Array.isArray(seoKeywords) ? seoKeywords : JSON.parse(seoKeywords || '[]'),
@@ -24,31 +25,35 @@ exports.createProduct = async (req, res, next) => {
 
     const parsedVariants = JSON.parse(variants || '[]');
 
+    // Group uploaded files by variant index
     const variantFilesMap = {};
 
     for (const file of req.files || []) {
       const match = file.fieldname.match(/variantFiles\[(\d+)]\[(images|videos)]/);
       if (match) {
         const index = Number(match[1]);
-        const type = match[2];
+        const type = match[2]; // 'images' or 'videos'
 
         if (!variantFilesMap[index]) variantFilesMap[index] = { images: [], videos: [] };
         variantFilesMap[index][type].push(file);
       }
     }
 
+    // Loop through each variant
     for (let i = 0; i < parsedVariants.length; i++) {
       const variantData = parsedVariants[i];
       const files = variantFilesMap[i] || { images: [], videos: [] };
 
-      // 🔄 Upload files to Cloudinary
+      // Upload to Cloudinary
       const imageUrls = await Promise.all(
         files.images.map(f => uploadToCloudinary(f.path, 'products/images'))
       );
+
       const videoUrls = await Promise.all(
         files.videos.map(f => uploadToCloudinary(f.path, 'products/videos'))
       );
 
+      // Create variant with Cloudinary URLs
       await ProductVariant.create({
         productId: product.id,
         ...variantData,
@@ -58,6 +63,7 @@ exports.createProduct = async (req, res, next) => {
     }
 
     res.status(201).json({ success: true, product });
+
   } catch (err) {
     console.error('Error creating product and variants:', err);
     next(err);
@@ -90,14 +96,12 @@ exports.getAllProducts = async (req, res, next) => {
       ]
     });
 
-    const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
-
-    // Map over products and format image URLs
+    // Just return the images/videos directly without BASE_URL
     const productsWithUrls = products.map(product => {
       const variants = product.variants.map(variant => ({
         ...variant.toJSON(),
-        images: (variant.images || []).map(file => BASE_URL + file),
-        videos: (variant.videos || []).map(file => BASE_URL + file)
+        images: (variant.images || []),  // Already full Cloudinary URLs
+        videos: (variant.videos || [])
       }));
       return {
         ...product.toJSON(),
@@ -110,6 +114,7 @@ exports.getAllProducts = async (req, res, next) => {
     next(err);
   }
 };
+
 
 // Get Product by ID
 exports.getProductById = async (req, res, next) => {
