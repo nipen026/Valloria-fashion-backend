@@ -102,7 +102,7 @@ try {
       where: { status: 'active' }
     });
 
-    const totalInventory = (productStockSum || 0) + (inventoryStockSum || 0);
+    const totalInventory = (inventoryStockSum || 0);
 
     // Total Orders
     const totalOrders = await Order.count({ where: whereDate });
