@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-
+const path = require('path');
 const productRoutes = require('./routes/productRoutes');
 const passport = require('passport');
 const authRoutes = require('./routes/authRoutes');
