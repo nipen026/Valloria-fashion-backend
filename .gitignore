@@ -39,6 +39,4 @@ build/
 *.sqlite
 *.db
 
-# Optional: Ignore upload folders if storing files locally
-uploads/
-public/uploads/
+
