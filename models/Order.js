@@ -15,6 +15,9 @@ const Order = sequelize.define('Order', {
     shipmentId: DataTypes.STRING,
     awbCode: DataTypes.STRING,
     deliveryStatus: DataTypes.STRING,
+    paymentStatus: {type:DataTypes.STRING, defaultValue: 'pending'},
+    razorpayPaymentId: DataTypes.STRING,
+    razorpayOrderId: DataTypes.STRING,
 });
 
 User.hasMany(Order, { foreignKey: 'userId', onDelete: 'CASCADE' });

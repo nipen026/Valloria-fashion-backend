@@ -4,7 +4,7 @@ const authController = require('../controllers/authController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const User = require('../models/User');
 require('../auth/google'); // initialize Google strategy
-
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // JWT Auth
@@ -12,7 +12,12 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 
 // Google Auth
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+  })
+);
 
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/' }),
@@ -23,7 +28,7 @@ router.get('/google/callback',
       { expiresIn: '1d' }
     );
     // Send token in frontend-friendly way (redirect or response)
-    res.redirect(`http://localhost:3000/login/success?token=${token}`);
+    res.redirect(`http://localhost:5173/login/success?token=${token}`);
   }
 );
 

@@ -63,7 +63,43 @@ exports.getUserOrders = async (req, res, next) => {
         next(err);
     }
 };
+exports.getRecentAndPastOrders = async (req, res, next) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Fetch both recent and past orders in one query
+    const orders = await Order.findAll({
+      where: {
+        userId: req.user.id
+      },
+      include: {
+        model: OrderItem,
+        include: [Product]
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Separate recent and past orders
+    const recentOrders = [];
+    const pastOrders = [];
+
+    orders.forEach(order => {
+      if (order.createdAt >= sevenDaysAgo) {
+        recentOrders.push(order);
+      } else {
+        pastOrders.push(order);
+      }
+    });
+
+    // Combine with recent orders first
+    const combinedOrders = [...recentOrders, ...pastOrders];
+
+    res.json({ success: true, orders: combinedOrders });
+  } catch (err) {
+    next(err);
+  }
+};
 // Admin: get all orders
 exports.getAllOrders = async (req, res, next) => {
     try {

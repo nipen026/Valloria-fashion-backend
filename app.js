@@ -10,7 +10,10 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const webhookRoutes = require('./routes/webhookRoutes');
 const shiprocketWebhook = require('./routes/shiprocketWebhook');
 const adminDashboardRoutes = require('./routes/adminDashboard');
-const orderRoutes = require('./routes/orderRoutes')
+const addressRoutes = require('./routes/addressRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const userRoutes = require('./routes/user');
+require('./auth/google');
 require('./jobs/syncShipments')();
 const app = express();
 
@@ -31,6 +34,8 @@ app.use('/api/payment', paymentRoutes);
 app.use('/webhook', webhookRoutes);
 app.use('/webhook/shiprocket', shiprocketWebhook);
 app.use('/api/admin/dashboard', adminDashboardRoutes); //done
+app.use('/api/addresses', addressRoutes); //done
+app.use('/api/user', userRoutes); //done
 app.use('/invoices', express.static('invoices'));
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const Inventory = require('../models/Inventory');
 const ProductVariant = require('../models/ProductVariant');
 const uploadToCloudinary = require('../utils/uploadToCloudinary');
+const { Op } = require('sequelize');
 // Create Product
 Product.hasMany(ProductVariant, { foreignKey: 'productId', as: 'variants' });
 ProductVariant.belongsTo(Product, { foreignKey: 'productId' });
@@ -103,6 +104,64 @@ exports.getAllProducts = async (req, res, next) => {
         images: (variant.images || []),  // Already full Cloudinary URLs
         videos: (variant.videos || [])
       }));
+      return {
+        ...product.toJSON(),
+        variants
+      };
+    });
+
+    res.json({ success: true, products: productsWithUrls });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getFilteredProducts = async (req, res, next) => {
+  try {
+    const { latest, categoryId, categoryName,subCategory } = req.query;
+
+    const whereClause = {};
+    if (categoryId) {
+      whereClause.categoryId = categoryId;
+    }
+    if (categoryName) {
+      whereClause.categoryName = categoryName;
+    }
+    if (subCategory) {
+      whereClause.subCategory = subCategory;
+    }
+
+    const products = await Product.findAll({
+      where: whereClause,
+      order: latest === 'true' ? [['createdAt', 'DESC']] : undefined,
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants',
+          attributes: [
+            'id',
+            'color',
+            'size',
+            'images',
+            'videos',
+            'mrp',
+            'salePrice',
+            'taxRate',
+            'taxType',
+            'stockQuantity',
+            'status'
+          ]
+        }
+      ]
+    });
+
+    const productsWithUrls = products.map(product => {
+      const variants = product.variants.map(variant => ({
+        ...variant.toJSON(),
+        images: variant.images || [],
+        videos: variant.videos || []
+      }));
+
       return {
         ...product.toJSON(),
         variants
@@ -293,3 +352,46 @@ exports.deleteProduct = async (req, res, next) => {
 };
 
 
+exports.searchProducts = async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ success: false, message: 'Search query (q) is required.' });
+    }
+
+    const keywords = q.split(' ').map(word => word.toLowerCase());
+
+    const products = await Product.findAll({
+      where: {
+        status: 'active',
+        [Op.or]: [
+          { productName: { [Op.iLike]: `%${q}%` } },
+          { brandName: { [Op.iLike]: `%${q}%` } },
+          { category: { [Op.iLike]: `%${q}%` } },
+          { subCategory: { [Op.iLike]: `%${q}%` } },
+          { productType: { [Op.iLike]: `%${q}%` } },
+          { description: { [Op.iLike]: `%${q}%` } },
+          { productTypeTag: { [Op.iLike]: `%${q}%` } },
+          { tags: { [Op.overlap]: keywords } },
+          { seoKeywords: { [Op.overlap]: keywords } },
+        ]
+      },
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants',
+          where: { status: 'active' },
+          required: false
+        }
+      ],
+      limit: 50,
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({ success: true, count: products.length, products });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Something went wrong.' });
+  }
+};

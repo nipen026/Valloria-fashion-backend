@@ -16,11 +16,13 @@ router.post(
 );
 router.get('/getProducts', productController.getAllProducts);
 router.get('/getProductById/:id', productController.getProductById);
+router.get('/getFilteredProducts', productController.getFilteredProducts);
 router.put(
   '/updateProductById/:id',
  upload.any(), // accept all files (we parse manually below)
   productController.updateProduct
 );
 router.delete('/deleteProductById/:id', productController.deleteProduct);
+router.get('/search', productController.searchProducts);
 
 module.exports = router;
