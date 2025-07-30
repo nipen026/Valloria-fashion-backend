@@ -17,8 +17,11 @@ const ProductVariant = sequelize.define('ProductVariant', {
   },
 });
 
-ProductVariant.associate = models => {
-  ProductVariant.belongsTo(models.Product, { foreignKey: 'productId', onDelete: 'CASCADE' });
+ProductVariant.associate = (models) => {
+  ProductVariant.belongsTo(models.Product, {
+    foreignKey: "productId",
+    onDelete: "CASCADE",
+  });
 };
 
 module.exports = ProductVariant;

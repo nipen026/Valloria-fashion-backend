@@ -74,4 +74,6 @@ Product.associate = models => {
     onDelete: 'CASCADE'
   });
 };
+
+
 module.exports = Product;
