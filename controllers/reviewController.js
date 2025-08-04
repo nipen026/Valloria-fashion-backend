@@ -33,21 +33,56 @@ exports.createReview = async (req, res, next) => {
   }
 };
 
+// exports.getProductReviews = async (req, res, next) => {
+//   try {
+//     const { productId } = req.params;
+
+//     const reviews = await Review.findAll({
+//       where: { productId },
+//       include: [{ model: require('../models/User'), attributes: ['id', 'name'] }],
+//       order: [['createdAt', 'DESC']]
+//     });
+
+//     res.json({ success: true, reviews });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
 exports.getProductReviews = async (req, res, next) => {
   try {
     const { productId } = req.params;
 
     const reviews = await Review.findAll({
       where: { productId },
-      include: [{ model: require('../models/User'), attributes: ['id', 'name'] }],
+      include: [{ model: User, attributes: ['id', 'name'] }],
       order: [['createdAt', 'DESC']]
     });
 
     res.json({ success: true, reviews });
   } catch (err) {
+    console.error('Error in getProductReviews:', err);
     next(err);
   }
 };
+
+// exports.getAllReviewsForAdmin = async (req, res, next) => {
+//   try {
+//     const reviews = await Review.findAll({
+//       include: [
+//         { model: User, attributes: ['id', 'name', 'email'] },
+//         { model: Product, attributes: ['id', 'productName'] }
+//       ],
+//       order: [['createdAt', 'DESC']]
+//     });
+
+//     res.json({ success: true, reviews });
+//   } catch (err) {
+//     console.error('Error fetching all reviews:', err);
+//     res.status(500).json({ success: false, message: 'Failed to fetch reviews' });
+//   }
+// };
+
 exports.getAllReviewsForAdmin = async (req, res, next) => {
   try {
     const reviews = await Review.findAll({

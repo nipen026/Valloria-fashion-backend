@@ -6,6 +6,7 @@ const Inventory = require('./Inventory');
 const Wishlist = require('./Wishlist');
 const User = require('./User');
 const ProductVariant = require('./ProductVariant');
+const Review = require('./Review');
 
 // Collect all models
 const models = {
@@ -27,7 +28,11 @@ Object.values(models).forEach(model => {
     model.associate(models);
   }
 });
+User.hasMany(Review, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Review.belongsTo(User, { foreignKey: 'userId' });
 
+Product.hasMany(Review, { foreignKey: 'productId', onDelete: 'CASCADE' });
+Review.belongsTo(Product, { foreignKey: 'productId' });
 module.exports = models;
 
 

@@ -28,7 +28,8 @@ router.get('/google/callback',
       { expiresIn: '1d' }
     );
     // Send token in frontend-friendly way (redirect or response)
-    res.redirect(`http://localhost:5173/login/success?token=${token}`);
+    process.env.NODE_ENV === 'local' ?
+    res.redirect(`http://localhost:5173/login/success?token=${token}`) : res.redirect(`https://www.vigobee.com/login/success?token=${token}`);
   }
 );
 

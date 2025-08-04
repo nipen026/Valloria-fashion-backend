@@ -11,7 +11,7 @@ router.post(
   reviewController.createReview
 );
 
-router.get('/product/:productId', reviewController.getProductReviews);
 router.get('/getAllreview', reviewController.getAllReviewsForAdmin);
+router.get('/:productId', reviewController.getProductReviews);
 
 module.exports = router;

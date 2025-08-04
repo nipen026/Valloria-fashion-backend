@@ -7,6 +7,10 @@ const Coupon = sequelize.define('Coupon', {
     allowNull: false,
     unique: true,
   },
+  label: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   discountType: {
     type: DataTypes.ENUM('percentage', 'flat'),
     allowNull: false,
