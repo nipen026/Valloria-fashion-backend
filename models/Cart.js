@@ -16,7 +16,7 @@ const Cart = sequelize.define('Cart', {
   },
   size: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   color: {
     type: DataTypes.STRING,
