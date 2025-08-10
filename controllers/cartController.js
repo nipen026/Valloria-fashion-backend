@@ -8,14 +8,25 @@ exports.addToCart = async (req, res, next) => {
     const { productId, quantity, size, color } = req.body;
 
     const product = await Product.findByPk(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
 
     const total = product.salePrice * quantity;
 
-    // 🔄 Match by product + size + color
-    const existingItem = await Cart.findOne({
-      where: { userId: req.user.id, productId, size, color }
-    });
+    // Build where condition dynamically
+    const whereCondition = {
+      userId: req.user.id,
+      productId,
+      color: color || null,
+    };
+    if (size) {
+      whereCondition.size = size;
+    } else {
+      whereCondition.size = null; // Allow products without size
+    }
+
+    let existingItem = await Cart.findOne({ where: whereCondition });
 
     let cartItem;
     if (existingItem) {
@@ -28,8 +39,8 @@ exports.addToCart = async (req, res, next) => {
         userId: req.user.id,
         productId,
         quantity,
-        size,
-        color,
+        size: size || null,
+        color: color || null,
         total
       });
     }
@@ -39,6 +50,7 @@ exports.addToCart = async (req, res, next) => {
     next(err);
   }
 };
+
 
 
 exports.getUserCart = async (req, res, next) => {
